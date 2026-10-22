@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+*.db-wal
+*.db-shm
+build/
+dist/
+*.spec
+sample-library/
+.DS_Store
+Thumbs.db
+node_modules/
+electron/out/

@@ -1,0 +1,60 @@
+{
+  "name": "creator-asset-assistant",
+  "productName": "Creator Asset Assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private asset search for video creators, powered by NVIDIA Nemotron on Nebius",
+  "author": "Creator Asset Assistant",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": ">=38.0.0",
+    "electron-builder": "^26.0.18"
+  },
+  "build": {
+    "appId": "app.creatorassetassistant",
+    "productName": "Creator Asset Assistant",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html",
+      "assets/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../build/runtime",
+        "to": ".",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Creator Asset Assistant",
+      "artifactName": "CreatorAssetAssistant-Setup-${version}.exe",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    }
+  }
+}

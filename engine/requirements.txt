@@ -1,0 +1,9 @@
+starlette>=0.40
+uvicorn>=0.30
+numpy>=1.26
+pillow>=10.0
+opencv-python-headless>=4.9
+requests>=2.31
+watchdog>=4.0
+python-dotenv>=1.0
+keyring>=24.0

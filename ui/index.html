@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator Asset Assistant</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ff6d1f'/%3E%3Cpath d='M9 11h14v10H9z' fill='none' stroke='%23111' stroke-width='2.4'/%3E%3Cpath d='M14 14l4 2-4 2z' fill='%23111'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/asset-display.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="window" id="app">
+  <header class="topbar drag">
+    <div class="tb-brand">
+      <div class="traffic" id="traffic" hidden>
+        <button class="tl tl-close" id="tlClose" aria-label="Close window"><svg viewBox="0 0 12 12"><path d="M3.5 3.5l5 5M8.5 3.5l-5 5"/></svg></button>
+        <button class="tl tl-min" id="tlMin" aria-label="Minimize window"><svg viewBox="0 0 12 12"><path d="M3 6h6"/></svg></button>
+        <button class="tl tl-max" id="tlMax" aria-label="Maximize window"><svg viewBox="0 0 12 12"><path d="M4 8V4h4M8 4v4H4"/></svg></button>
+      </div>
+      <button class="logo no-drag" data-view="home" aria-label="Asset Assistant home">
+        <span class="logo-top">Creator</span>
+        <span class="logo-text">Asset Assistant</span>
+      </button>
+    </div>
+    <nav class="nav" aria-label="Library">
+      <button class="nav-item" data-view="home" aria-current="page">Home</button>
+      <button class="nav-item" data-view="kind" data-kind="video">Videos<span class="ni-count" data-count="video"></span></button>
+      <button class="nav-item" data-view="kind" data-kind="image">Images<span class="ni-count" data-count="image"></span></button>
+      <button class="nav-item" data-view="kind" data-kind="audio">Sounds<span class="ni-count" data-count="audio"></span></button>
+      <button class="nav-item" data-view="kind" data-kind="template">Templates<span class="ni-count" data-count="template"></span></button>
+      <span class="nav-sep" aria-hidden="true"></span>
+      <button class="nav-item" data-view="plan">B-roll plan</button>
+      <button class="nav-item" data-view="licences">Licences</button>
+    </nav>
+    <div class="tb-actions">
+      <button class="nav-item nav-eco" data-view="settings"><span class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="eco-label">Folders &amp; privacy</span></button>
+      <button class="btn btn-primary" id="topAdd">Add folder</button>
+    </div>
+  </header>
+
+  <div class="frame">
+    <aside class="gutter">
+      <button class="xbox" id="clearSearch" aria-label="Clear search and go home"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 6l28 28M34 6 6 34"/><rect x="16" y="16" width="8" height="8"/></svg></button>
+    </aside>
+
+    <section class="main">
+      <div class="searchrow">
+        <form class="search" id="searchForm" role="search" autocomplete="off">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+          <input id="q" type="search" placeholder="Describe it or say when: punchy whoosh, trees in the wind, 11:54am on 6/9/26" aria-label="Search your library">
+          <kbd>/</kbd>
+        </form>
+        <div class="status" id="status" role="status"></div>
+      </div>
+      <div class="banner" id="banner" hidden></div>
+      <main class="view" id="view" tabindex="-1"></main>
+    </section>
+
+    <aside class="rail" aria-label="Tools">
+      <span class="rail-dot" id="railDot" title="Engine status"><i></i></span>
+      <div class="rail-box">
+        <button class="rail-btn" id="railRescan" aria-label="Rescan all folders" title="Rescan all folders"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
+        <button class="rail-btn" id="navShortcuts" aria-label="Keyboard shortcuts" title="Keyboard shortcuts"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12"/><path d="M7 10h1M11 10h1M15 10h1M8 14h8"/></svg></button>
+        <button class="rail-btn" id="railLog" aria-label="Open engine log" title="Open engine log" hidden><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></button>
+      </div>
+    </aside>
+  </div>
+
+  <aside class="drawer" id="drawer" aria-label="Asset details" hidden></aside>
+</div>
+<dialog class="modal" id="shortcuts">
+  <h2>Shortcuts</h2>
+  <dl>
+    <dt><kbd>/</kbd></dt><dd>Search</dd>
+    <dt><kbd>Enter</kbd></dt><dd>Open the focused asset</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close the panel or clear the search</dd>
+  </dl>
+  <form method="dialog"><button class="btn btn-ghost">Close</button></form>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
