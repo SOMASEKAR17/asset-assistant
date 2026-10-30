@@ -204,7 +204,7 @@ function webCardHTML(it) {
   const i = webStore.push(it) - 1;
   const img = it.thumb ? `<img class="web-img" src="${esc(it.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : "";
   return `<article class="card web-card">
-    <a class="thumb brackets ${it.kind === "audio" ? "audio" : ""}" href="${esc(it.url)}" target="_blank" rel="noopener" title="Open on ${esc(it.site_name)}">${img}<span class="ext">${esc(it.site_name)}</span><span class="pill site">${esc(it.site_name)}</span></a>
+    <a class="thumb brackets ${it.kind === "audio" ? "audio" : ""}" href="${esc(it.url)}" target="_blank" rel="noopener" title="Open on ${esc(it.site_name)}">${img}<span class="ext">${it.item ? "Preview unavailable" : "Browse results on " + esc(it.site_name)}</span><span class="pill site">${esc(it.site_name)}</span></a>
     <div class="card-title" title="${esc(it.url)}">${esc(it.title)}</div>
     <div class="lics">${it.item ? licBadges(it.licence) : ""}</div>
     <div class="web-actions">${it.item ? `<button class="btn btn-primary btn-sm" data-save="${i}">Save to Inbox</button>` : '<span class="muted">A search page, not one item</span>'}<a class="btn btn-ghost btn-sm" href="${esc(it.url)}" target="_blank" rel="noopener">Open page</a></div>
@@ -213,14 +213,18 @@ function webCardHTML(it) {
 
 function wireWeb(root) {
   $$("[data-save]", root).forEach((b) => b.addEventListener("click", () => saveWeb(b)));
-  $$("img.web-img", root).forEach((img) => img.addEventListener("error", () => img.remove(), { once: true }));
+  $$("img.web-img", root).forEach((img) => {
+    img.addEventListener("error", () => img.remove(), { once: true });
+    if (img.complete && !img.naturalWidth) img.remove();
+  });
   $$("[data-goto]", root).forEach((b) => b.addEventListener("click", () => go(b.dataset.goto)));
 }
 
 function webResultHTML(data, kind) {
   if (data.off) return webOffHTML();
   const where = (data.sites || []).join(", ");
-  if (!data.items.length) return `<p class="web-note">No free ${KIND_WORD[kind] || "assets"} found on ${esc(where)}.</p>`;
+  data = { ...data, items: data.items.filter((it) => it.item) };
+  if (!data.items.length) return `<p class="web-note">No individual ${KIND_WORD[kind] || "assets"} found on ${esc(where)}. Try more specific search words.</p>`;
   return `<p class="web-note">Found on ${esc(where)} through Tavily. The badge shows each site's usual licence; it is read from the item's own page when you save it.</p><div class="row web-row">${data.items.map(webCardHTML).join("")}</div>`;
 }
 
@@ -253,16 +257,24 @@ async function saveWeb(btn) {
   if (!it) return;
   btn.disabled = true;
   btn.textContent = "Saving…";
+  btn.closest(".web-card")?.querySelector(".save-error")?.remove();
   try {
     const r = await api("/api/web/save", { method: "POST", body: { url: it.url, kind: it.kind } });
     btn.textContent = "Saved";
     btn.classList.replace("btn-primary", "btn-ghost");
     const lic = r.licence || {};
-    toast(`Saved ${r.name} to your Inbox (${lic.licence || "licence saved"}). Indexing it now.`);
+    toast(`Saved ${r.name} to your Inbox. ${lic.status === "unverified" ? "Licence unverified—check the source page." : "Indexing it now."}`);
     refreshStatus(true);
   } catch (err) {
     btn.disabled = false;
     btn.textContent = "Save to Inbox";
+    const card = btn.closest(".web-card");
+    if (card) {
+      const message = document.createElement("p");
+      message.className = "web-note bad save-error";
+      message.textContent = err.message;
+      card.appendChild(message);
+    }
     toast(err.message);
   }
 }

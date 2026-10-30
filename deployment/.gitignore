@@ -1,0 +1,12 @@
+vendor/
+library/
+seed/
+models/
+.env
+secrets/
+uploads/
+.preview/
+__pycache__/
+*.pyc
+site/downloads/*.exe
+site/downloads/*.sha256

@@ -1,0 +1,15 @@
+**
+!Dockerfile
+!server.py
+!prepare_library.py
+!cloud.py
+!uploads.py
+!private_api.py
+!upload_worker.py
+!site/
+!site/**
+site/downloads/*.exe
+!vendor/
+!vendor/**
+**/__pycache__
+**/*.pyc

@@ -535,6 +535,7 @@ select.input { height: 38px; appearance: none; background-image: linear-gradient
 .web-card .thumb { text-decoration: none; }
 .web-card .thumb img { position: absolute; inset: 0; }
 .web-card .thumb .ext { color: #9a9a9a; }
+.web-card .thumb img + .ext { visibility: hidden; }
 .web-card .pill.site { left: 8px; right: auto; top: 8px; bottom: auto; background: var(--accent); color: var(--ink); text-transform: uppercase; letter-spacing: 0.05em; }
 .web-card .card-title { margin: 4px 0 0; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .web-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 2px; }

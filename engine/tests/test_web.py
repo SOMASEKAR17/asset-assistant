@@ -8,6 +8,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from PIL import Image
@@ -21,7 +22,7 @@ from caa.broll import BrollPlanner, clean_beats
 from caa.config import load_settings
 from caa.db import Database
 from caa.embed import FallbackEmbedder
-from caa.sources import WebAssets, identify, licence_from_rules, site_for_url
+from caa.sources import WebAssets, identify, licence_from_rules, site_for_url, is_item_page
 from caa.tavily import Tavily, TavilyError
 from fixtures import FakeTextEmbedder, FakeTokenFactory, make_library
 
@@ -210,8 +211,9 @@ class WebAssetTests(unittest.TestCase):
         self.assertIn("pexels.com", body["include_domains"])
         self.assertNotIn("unsplash.com", body["include_domains"])
         self.web.search("sunset beach", "video", 5)
-        self.assertEqual(len(self.tv.posts), 1)
-        self.assertEqual(self.tv.stats["cached"], 1)
+        self.assertEqual(len(self.tv.posts), 2)
+        self.assertEqual(self.tv.stats["cached"], 2)
+        self.assertTrue(all(it["item"] for it in res["items"]))
 
     def test_local_mode_turns_tavily_off(self):
         self.settings.privacy_mode = "local"
@@ -220,6 +222,45 @@ class WebAssetTests(unittest.TestCase):
         with self.assertRaises(TavilyError):
             self.web.search("sunset", "video")
         self.settings.privacy_mode = "standard"
+
+    def test_missing_preview_reads_item_metadata_and_caches(self):
+        data = {"results": [{"url": PEXELS_VIDEO, "title": "Waves"},
+                            {"url": "https://www.pexels.com/search/videos/heaven-12345/", "score": 1}],
+                "images": ["https://images.pexels.com/videos/10936620/wrong.jpg"]}
+        html = b'<meta content="https://images.pexels.com/preview.jpg?a=1&amp;b=2" property="og:image">'
+        with patch.object(self.tv, "search", return_value=data), patch.object(
+                self.session, "get", return_value=FakeResponse(PEXELS_VIDEO, html, "text/html")) as get:
+            result = self.web.search("waves", "video")
+            self.assertEqual(result["items"][0]["thumb"], "https://images.pexels.com/preview.jpg?a=1&b=2")
+            self.assertEqual(len(result["items"]), 1)
+            self.web.search("waves", "video")
+            self.assertEqual(get.call_count, 1)
+            self.assertFalse(get.call_args.kwargs["allow_redirects"])
+
+    def test_preview_failure_and_poster(self):
+        import requests
+        with patch.object(self.session, "get", side_effect=requests.Timeout):
+            self.assertIsNone(self.web.page_preview(PEXELS_VIDEO))
+        other = "https://www.pexels.com/video/waves-12345/"
+        html = b'<meta property="og:image" content="javascript:bad"><video poster="/poster.jpg">'
+        with patch.object(self.session, "get", return_value=FakeResponse(other, html, "text/html")):
+            self.assertEqual(self.web.page_preview(other), "https://www.pexels.com/poster.jpg")
+        self.assertFalse(is_item_page("pexels", "https://www.pexels.com/search/video/heaven-12345/"))
+
+    def test_targeted_search_replaces_categories_and_ignores_flags(self):
+        category = {"url": "https://www.pexels.com/search/videos/heaven/", "score": 1}
+        item = {"url": PEXELS_VIDEO, "images": ["https://www.pexels.com/flags/us.svg"]}
+        with patch.object(self.tv, "search", side_effect=[{"results": [category]}, {"results": [item]}]) as search, \
+                patch.object(self.web, "page_preview", return_value="https://images.pexels.com/videos/1093662/poster.jpg"):
+            result = self.web.search("road to heaven", "video")
+        self.assertEqual([it["url"] for it in result["items"]], [PEXELS_VIDEO])
+        self.assertIn("poster.jpg", result["items"][0]["thumb"])
+        self.assertIn("site:pexels.com/video/", search.call_args.args[0])
+
+    def test_only_categories_returns_no_assets(self):
+        with patch.object(self.tv, "search", return_value={"results": [
+                {"url": "https://pixabay.com/videos/search/road/"}]}):
+            self.assertEqual(self.web.search("road", "video")["items"], [])
 
     def test_pick_media(self):
         url = self.web.pick_media("pexels", PEXELS_VIDEO, PAGES[PEXELS_VIDEO], [], "video")
@@ -252,6 +293,44 @@ class WebAssetTests(unittest.TestCase):
         with self.assertRaises(SourceError):
             self.web.save("https://example.com/photo/1", "image")
         self.assertFalse(list((self.tmp / "Inbox").glob("*")))
+
+    def test_save_falls_back_to_direct_page_when_extract_fails(self):
+        page = "https://pixabay.com/videos/sea-peace-12345/"
+        media_url = "https://cdn.pixabay.com/video/12345/sea_1920.mp4"
+        html = ('<title>Sea peace</title><p>Pixabay Content License</p><script>{"contentUrl":"'
+                + media_url.replace("/", r"\/") + '"}</script>').encode()
+        def get(url, **kwargs):
+            if url == page:
+                return FakeResponse(page, html, "text/html")
+            self.assertEqual(url, media_url)
+            return FakeResponse(url, b"video bytes", "video/mp4")
+        with patch.object(self.tv, "extract", side_effect=TavilyError("Failed to fetch url")), \
+                patch.object(self.session, "get", side_effect=get):
+            result = self.web.save(page, "video")
+        self.assertEqual(Path(result["path"]).read_bytes(), b"video bytes")
+        self.assertEqual(len(self.saved), 1)
+        self.assertEqual(result["media_url"], media_url)
+
+    def test_save_blocked_page_uses_download_route_with_unverified_licence(self):
+        def get(url, **kwargs):
+            if url == PEXELS_VIDEO:
+                return FakeResponse(url, b"Blocked", "text/html", 403)
+            self.assertEqual(url, "https://www.pexels.com/video/1093662/download/")
+            return FakeResponse(url, b"video bytes", "video/mp4")
+        with patch.object(self.tv, "extract", side_effect=TavilyError("Failed to fetch url")), \
+                patch.object(self.session, "get", side_effect=get):
+            result = self.web.save(PEXELS_VIDEO, "video")
+        self.assertEqual(result["licence"]["status"], "unverified")
+        self.assertIsNone(result["licence"]["checked_at"])
+
+    def test_save_blocked_site_gives_actionable_error(self):
+        from caa.sources import SourceError
+        page = "https://pixabay.com/videos/sea-peace-12345/"
+        with patch.object(self.tv, "extract", side_effect=TavilyError("Failed to fetch url")), \
+                patch.object(self.session, "get", return_value=FakeResponse(page, b"Blocked", "text/html", 403)):
+            with self.assertRaisesRegex(SourceError, "Use Open page"):
+                self.web.save(page, "video")
+        self.assertEqual(self.saved, [])
 
     def test_find_source(self):
         lic = self.web.find_source("pexels-cottonbro-5698420.jpg")

@@ -7,9 +7,11 @@ __pycache__/
 *.db-shm
 build/
 dist/
+output/
 *.spec
 sample-library/
 .DS_Store
 Thumbs.db
 node_modules/
 electron/out/
+electron/dist_old/

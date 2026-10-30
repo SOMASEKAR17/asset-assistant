@@ -1,0 +1,71 @@
+services:
+  web:
+    build: .
+    image: creator-asset-web:0.1.0
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DEMO_ALLOWED_HOSTS: "localhost,127.0.0.1,${DOMAIN:-localhost}"
+      DEMO_ML: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      DEMO_UPLOADS: /uploads
+      DEMO_ASR_MODELS: /models/asr
+      DEMO_SECURE_COOKIE: "${DEMO_SECURE_COOKIE:-1}"
+      NEBIUS_API_KEY_FILE: /run/secrets/nebius_key
+      TAVILY_API_KEY_FILE: /run/secrets/tavily_key
+    secrets: [nebius_key, tavily_key]
+    volumes:
+      - ./library:/library:ro
+      - ./seed:/seed:ro
+      - models:/models:ro
+      - uploads:/uploads
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /data:size=1024m,uid=10001,gid=10001,mode=0700
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 8g
+    cpus: 4
+    pids_limit: 256
+    restart: unless-stopped
+  index:
+    profiles: [prepare]
+    image: creator-asset-web:0.1.0
+    # Operator-only preparation. Root permits writing bind-mounted seed on Linux.
+    user: "0:0"
+    command: [python, prepare_library.py]
+    environment:
+      NEBIUS_API_KEY_FILE: /run/secrets/nebius_key
+      DEMO_ASR_MODELS: /models/asr
+      CAA_TOKENFACTORY_BASE_URL: "${CAA_TOKENFACTORY_BASE_URL:-https://api.tokenfactory.nebius.com/v1}"
+    secrets: [nebius_key]
+    volumes:
+      - ./library:/library:ro
+      - ./seed:/data
+      - models:/models
+    mem_limit: 12g
+  proxy:
+    profiles: [production]
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: "${DOMAIN:-localhost}"
+      ACME_EMAIL: "${ACME_EMAIL:-}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+    restart: unless-stopped
+volumes:
+  uploads:
+  models:
+  caddy_data:
+  caddy_config:
+secrets:
+  nebius_key:
+    file: ./secrets/nebius_api_key.txt
+  tavily_key:
+    file: ./secrets/tavily_api_key.txt

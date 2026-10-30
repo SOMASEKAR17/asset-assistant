@@ -4,7 +4,7 @@ A private assistant for video creators. It indexes your footage, photos, music, 
 
 Built for the **Nebius x NVIDIA Global AI Hackathon**, Personal AI track. Licence: MIT.
 
-Changes are logged in [CHANGELOG.md](CHANGELOG.md). The hackathon plan is in [plan.md](plan.md). A worked example of one clip going through indexing and search, with every model named, is in [docs/scenario-walkthrough.md](docs/scenario-walkthrough.md). Everything that uses the web (Tavily) is in [docs/tavily.md](docs/tavily.md).
+Changes are logged in [CHANGELOG.md](CHANGELOG.md). The hackathon plan is in [plan.md](plan.md), and the strategic roadmap is in [FUTURE_PLAN.md](FUTURE_PLAN.md). A worked example of one clip going through indexing and search, with every model named, is in [docs/scenario-walkthrough.md](docs/scenario-walkthrough.md). Everything that uses the web (Tavily) is in [docs/tavily.md](docs/tavily.md).
 
 ## What it does
 

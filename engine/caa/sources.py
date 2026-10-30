@@ -5,8 +5,11 @@ import logging
 import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from html.parser import HTMLParser
+from html import unescape
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urlparse, urljoin
 
 import requests
 
@@ -115,8 +118,25 @@ def kind_for_url(site: str | None, url: str) -> str | None:
 
 
 def is_item_page(site: str | None, url: str) -> bool:
+    if any(part in ("search", "searches", "collections") for part in urlparse(url).path.lower().split("/")):
+        return False
     rx = ITEM_PAGE.get(site or "")
     return bool(rx and rx.search(urlparse(url).path))
+
+
+class _PreviewParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.images = {}
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "meta":
+            key = (attrs.get("property") or attrs.get("name") or "").lower()
+            if key in ("og:image", "twitter:image", "twitter:image:src"):
+                self.images.setdefault(key, attrs.get("content") or "")
+        elif tag == "video" and attrs.get("poster"):
+            self.images.setdefault("poster", attrs["poster"])
 
 
 def site_defaults(site: str, url: str | None = None, method: str = "site default") -> dict:
@@ -273,22 +293,36 @@ class WebAssets:
         words = KIND_WORDS.get(kind or "", "free stock video photo or sound")
         data = self.tavily.search(f"{q} {words}", max_results=min(20, max(limit * 2, 10)),
                                   include_domains=[SITES[s]["domain"] for s in sites], include_images=True)
+        results = list(data.get("results") or [])
+        images = image_urls(data.get("images"))
+        if kind == "video" and sum(is_item_page(site_for_url(r.get("url") or ""), r.get("url") or "")
+                                   for r in results) < limit:
+            try:
+                targeted = self.tavily.search(
+                    f"{q} {words} (site:pexels.com/video/ OR site:pixabay.com/videos/ OR site:mixkit.co/free-stock-video/) -inurl:search -inurl:collections",
+                    max_results=min(20, max(limit * 2, 10)),
+                    include_domains=[SITES[s]["domain"] for s in sites], include_images=True)
+                results.extend(targeted.get("results") or [])
+                images.extend(image_urls(targeted.get("images")))
+            except TavilyError:
+                log.warning("Targeted asset search unavailable; using individual items from the initial search")
         items = []
         seen = set()
-        pool = image_urls(data.get("images"))
-        for r in data.get("results") or []:
+        for r in results:
             url = str(r.get("url") or "")
             site = site_for_url(url)
-            if not site or url in seen:
+            if not site or not is_item_page(site, url) or url in seen:
                 continue
             seen.add(url)
             k = kind_for_url(site, url)
             if kind and k and k != kind:
                 continue
-            thumbs = image_urls(r.get("images"))
+            thumbs = []
             ident = _page_id(url)
-            if not thumbs and ident:
-                thumbs = [u for u in pool if ident in u]
+            if ident:
+                # Page image lists can contain flags, avatars and unrelated assets.
+                candidates = image_urls(r.get("images")) + images
+                thumbs = [u for u in candidates if _matches_preview(site, ident, u)]
             m = re.search(r"/photo/[^/]*?(\d{4,})/?$", urlparse(url).path) if site == "pexels" else None
             if not thumbs and m:
                 thumbs = [f"https://images.pexels.com/photos/{m.group(1)}/pexels-photo-{m.group(1)}.jpeg?auto=compress&w=640"]
@@ -297,7 +331,48 @@ class WebAssets:
                           "thumb": thumbs[0] if thumbs else None, "score": float(r.get("score") or 0.0),
                           "licence": site_defaults(site, url)})
         items.sort(key=lambda it: (not it["item"], -it["score"]))
-        return {"query": q, "kind": kind, "items": items[:limit], "sites": [SITES[s]["name"] for s in sites]}
+        items = items[:limit]
+        missing = [it for it in items if it["item"] and not it["thumb"] and it["kind"] in ("video", "image")]
+        if missing:
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                for it, thumb in zip(missing, pool.map(self.page_preview, [it["url"] for it in missing])):
+                    it["thumb"] = thumb
+        return {"query": q, "kind": kind, "items": items, "sites": [SITES[s]["name"] for s in sites]}
+
+    def page_preview(self, url: str) -> str | None:
+        """Read only the item's declared preview, never a neighbouring asset's image."""
+        site = site_for_url(url)
+        if not self.tavily.available or not is_item_page(site, url):
+            return None
+        key = "web-preview:v2:" + url
+        cached = self.db.cache_get(key, max_age=86400)
+        if cached is not None:
+            return cached.get("thumb")
+        thumb = None
+        try:
+            # Do not follow redirects to arbitrary hosts; bound page size and time.
+            with self.session.get(url, headers={"User-Agent": USER_AGENT}, timeout=(3, 5),
+                                  stream=True, allow_redirects=False) as response:
+                if response.status_code == 200 and "text/html" in response.headers.get("Content-Type", ""):
+                    body = bytearray()
+                    started = time.monotonic()
+                    for chunk in response.iter_content(16384):
+                        body.extend(chunk)
+                        if len(body) >= 512000 or time.monotonic() - started > 6:
+                            break
+                    parser = _PreviewParser()
+                    parser.feed(body.decode("utf-8", errors="replace"))
+                    for name in ("poster", "og:image", "twitter:image", "twitter:image:src"):
+                        value = parser.images.get(name)
+                        candidate = urljoin(url, value) if value else ""
+                        if urlparse(candidate).scheme in ("https", "http") and not any(
+                                word in urlparse(candidate).path.lower() for word in ("avatar", "flag", "logo", "icon")):
+                            thumb = candidate
+                            break
+        except (requests.RequestException, ValueError):
+            pass
+        self.db.cache_put(key, {"thumb": thumb})
+        return thumb
 
     def read_page(self, url: str) -> tuple[str, list[str], str]:
         data = self.tavily.extract(url, include_images=True)
@@ -391,13 +466,23 @@ class WebAssets:
 
     def save(self, url: str, kind: str | None = None) -> dict:
         site = site_for_url(url)
-        if not site:
-            raise SourceError("This page is not on a supported free site")
-        text, images, title = self.read_page(url)
+        if not site or not is_item_page(site, url):
+            raise SourceError("Choose an individual asset on a supported free site, not a search page.")
+        if not self.tavily.available:
+            raise TavilyError(self.tavily.why_off() or "Web access is off")
+        verified = True
+        try:
+            text, images, title = self.read_page(url)
+        except (SourceError, TavilyError):
+            # Search can discover a page even when Tavily Extract cannot fetch it.
+            text, images, title = self.direct_page(url)
+            verified = bool(text)
         media = self.pick_media(site, url, text, images, kind)
         if not media:
-            raise SourceError("No downloadable file was found on this page. Open the page and download it there.")
-        lic = self.licence_for(site, text, url, title or None)
+            raise SourceError("Neither Tavily nor the site's page provided a downloadable file. Use Open page, download the asset there, and place it in your Inbox.")
+        lic = self.licence_for(site, text, url, title or None) if verified else site_defaults(site, url)
+        if not verified:
+            lic.update(status="unverified", note=lic["note"] + " The asset page could not be read; verify its licence on the site.")
         slug = _slug(urlparse(url).path.rstrip("/").split("/")[-1] or title or "asset")
         path = self._download(media, self.inbox(), f"{site}-{slug}")
         lic["file"] = path.name
@@ -405,6 +490,32 @@ class WebAssets:
         if self.on_saved:
             self.on_saved(path)
         return {"path": str(path), "name": path.name, "licence": lic, "media_url": media, "inbox": str(self.inbox())}
+
+    def direct_page(self, url: str) -> tuple[str, list[str], str]:
+        """Fallback for Save when Extract fails; never treat a blocked response as licence evidence."""
+        try:
+            with self.session.get(url, headers={"User-Agent": USER_AGENT}, stream=True,
+                                  timeout=(5, 10), allow_redirects=False) as response:
+                if response.status_code != 200 or "text/html" not in response.headers.get("Content-Type", ""):
+                    return "", [], ""
+                body = bytearray()
+                started = time.monotonic()
+                for chunk in response.iter_content(16384):
+                    body.extend(chunk)
+                    if len(body) >= 2 * 1024 * 1024 or time.monotonic() - started > 15:
+                        break
+                html = unescape(body.decode("utf-8", errors="replace")).replace(r"\/", "/").replace(r"\u002F", "/").replace(r"\u0026", "&")
+                media = MEDIA_RX.findall(html)
+                # Ignore scripts, styles and navigation markup in licence evidence.
+                visible = re.sub(r"<(script|style)\b[^>]*>.*?</\1>", "", html, flags=re.I | re.S)
+                visible = re.sub(r"<[^>]+>", " ", visible)
+                visible = re.sub(r"\s+", " ", visible).strip()
+                title = re.search(r"<title[^>]*>(.*?)</title>", html, re.I | re.S)
+                # A challenge page or empty shell must not be marked as a licence read.
+                evidence = visible if media else ""
+                return evidence, media, unescape(title.group(1)).strip()[:120] if title else ""
+        except (requests.RequestException, ValueError):
+            return "", [], ""
 
     def find_source(self, name: str) -> dict | None:
         ident = identify(name)
@@ -522,6 +633,18 @@ class SourceAudit:
                    "not_commercial": sum(1 for i in items if (i["licence"] or {}).get("commercial_ok") is False),
                    "unclear": sum(1 for i in items if i["checked"] and (i["licence"] or {}).get("commercial_ok") is None)}
         return {"items": items, "summary": summary, "audit": self.progress}
+
+
+def _matches_preview(site: str, ident: str, url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    path = parsed.path.lower()
+    if any(word in path for word in ("avatar", "flag", "logo", "icon")):
+        return False
+    if site == "pexels":
+        return parsed.hostname == "images.pexels.com" and bool(re.search(rf"/(?:videos|photos)/{re.escape(ident)}/", path))
+    return bool(re.search(rf"(?<!\d){re.escape(ident)}(?!\d)", path))
 
 
 def _page_id(url: str) -> str | None:
