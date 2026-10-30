@@ -11,8 +11,6 @@ await rm(output, {recursive: true, force: true});
 await mkdir(path.join(output, 'catalog/media'), {recursive: true});
 for (const name of ['styles.css', 'site.js']) await copyFile(path.join(site, name), path.join(output, name));
 await cp(path.join(site, 'fonts'), path.join(output, 'fonts'), {recursive: true});
-await mkdir(path.join(output, 'media'));
-for (const name of ['demo.mp4', 'demo-poster.jpg']) await copyFile(path.join(site, 'media', name), path.join(output, 'media', name));
 for (const name of ['sandbox.html', 'search.mjs', 'static-sandbox.mjs']) await copyFile(path.join(here, name), path.join(output, name));
 const config = JSON.parse(await readFile(path.join(site, 'config.json'), 'utf8'));
 await writeFile(path.join(output, 'config.json'), JSON.stringify({

@@ -23,7 +23,7 @@ Do not commit the raw SQLite database, private uploads, secrets or the original 
 
 ## 2. Push the static inputs to GitHub
 
-Commit the new deployment configuration/scripts, `vercel/catalog/index.json`, `vercel/catalog/media/`, and shared `site/` files including fonts and the demo video. Use normal Git for these small sample files, not Git LFS pointer files. The generated `vercel/public/` output is ignored and rebuilt by Vercel. Confirm exported assets are included with `git status --short -- deployment/vercel/catalog`.
+Commit the new deployment configuration/scripts, `vercel/catalog/index.json`, `vercel/catalog/media/`, and shared `site/` files including fonts and the YouTube embed markup. Use normal Git for these small sample files, not Git LFS pointer files. The generated `vercel/public/` output is ignored and rebuilt by Vercel. Confirm exported assets are included with `git status --short -- deployment/vercel/catalog`.
 
 `check_git_inputs.py` verifies every catalog-referenced media file, shared font and build input exists and is not ignored, while confirming secrets and generated output remain ignored. Run it after updating samples. Git-visible means ready to commit, not already pushed.
 
@@ -55,3 +55,5 @@ node deployment/vercel/build.mjs
 Open `http://127.0.0.1:8093/`. This local helper uses the project's existing Starlette/Uvicorn installation to support HTTP Range requests for video seeking. Python is only used for this optional local preview; Vercel serves the built files directly. Use HTTP rather than double-clicking the HTML because the browser fetches the JSON catalog and JavaScript modules.
 
 For private uploads, live Tavily search and AI processing, the original Docker backend remains available as a separate hosting option. This static version does not replace those capabilities with misleading controls.
+
+The landing demo embeds YouTube video `K25lt5u4zsg` in a responsive player capped at 1080px. The old local recording is retained in source but is no longer copied into the Vercel build. Playback requires YouTube access and permission to embed the video. The iframe sends the site origin using YouTube's recommended `strict-origin-when-cross-origin` referrer policy.

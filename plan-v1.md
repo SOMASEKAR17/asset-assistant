@@ -1,4 +1,4 @@
-# Creator Asset Assistant: Personal AI Track Plan
+# Creator Asset Assistant: Best Apps and Agents Track Plan
 
 An always-on, private assistant that runs locally, indexes a creator's entire asset library (video, photos, templates, audio, SFX, green screen clips), lets them find anything by describing it, and proactively suggests assets while they edit.
 

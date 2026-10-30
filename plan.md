@@ -1,4 +1,4 @@
-# Creator Asset Assistant: Plan v2 (Personal AI Track)
+# Creator Asset Assistant: Plan v2 (Best Apps and Agents Track)
 
 A private, always-on assistant that indexes a creator's whole asset library (video, photos, templates, music, SFX, green screen clips) on their own machine and in their Google Drive, finds anything from a plain-language description, suggests the right asset while they edit, and fills gaps with free, properly licensed assets from the web.
 
@@ -13,7 +13,7 @@ A private, always-on assistant that indexes a creator's whole asset library (vid
 | Item | Decision |
 |---|---|
 | Hackathon | Nebius x NVIDIA Global AI Hackathon (Devpost) |
-| Track | Personal AI (also eligible for Best Use of Tavily) |
+| Track | Best Apps and Agents (also eligible for Best Use of Tavily) |
 | Deadline | **Fri 30 Oct 2026, 10:00 AM PDT = 10:30 PM IST**. Internal target: submit by 6:00 PM IST |
 | Judging | 1–15 Dec 2026. The demo URL must stay live until then |
 | Product form | Windows desktop app (Electron, .exe) + landing page + hosted web demo |
@@ -69,7 +69,7 @@ A private, always-on assistant that indexes a creator's whole asset library (vid
 ## 2. Why this idea (findings)
 
 ### 2.1 Track fit
-The Personal AI track asks for an always-on private assistant with persistent memory, reusable skills, user-chosen tools and tasks across daily workflows, using NVIDIA open models and tools such as NemoClaw, OpenShell, Hermes Agent and Nebius Serverless. Every one of these maps to a feature here (section 11).
+The Best Apps and Agents track fits the implemented creator workflow: index a media library, search and preview matching moments, discover stock, interpret licences and plan b-roll. The desktop application uses NVIDIA Nemotron through Nebius Token Factory, with Ultra for b-roll planning and smaller models for everyday descriptions and licence tasks. Nebius Serverless hosting is optional; the Vercel site is a limited interactive preview of the desktop product. MCP, editor extensions, Hermes, OpenShell and reusable agent skills remain planned integrations, not current submission capabilities.
 
 ### 2.2 The global test
 A global panel will ask "how does this work in the USA or in Greenland?". This idea passes: it depends on no country's laws, insurers or payment systems. A creator in Ohio, Berlin or Nuuk has the same messy drive. Search works on what is in the picture and the sound; the local meaning-search model understands queries in 50+ languages; Creative Commons licences used by the free sources are international.
@@ -415,7 +415,7 @@ Roles (adjust to team size): **A** engine + models, **B** UI + desktop + landing
 ---
 
 ## 17. Submission checklist
-- [ ] Track: Personal AI
+- [ ] Track: Best Apps and Agents
 - [ ] Description (what / why / how) with the evidence table
 - [ ] Demo URL (hosted demo) live, and kept live until 15 Dec
 - [ ] YouTube video ≤ 3:00, public

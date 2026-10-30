@@ -2,7 +2,7 @@
 
 A private assistant for video creators. It indexes your footage, photos, music, sound effects and templates where they already live (local drives and your Google Drive for desktop folder) and lets you find anything by describing it, by when you shot it, or by what it looks like. Your files never leave your computer, and searches run on your computer too.
 
-Built for the **Nebius x NVIDIA Global AI Hackathon**, Personal AI track. Licence: MIT.
+Built for the **Nebius x NVIDIA Global AI Hackathon**, Best Apps and Agents track. Licence: MIT.
 
 Changes are logged in [CHANGELOG.md](CHANGELOG.md). The hackathon plan is in [plan.md](plan.md), and the strategic roadmap is in [FUTURE_PLAN.md](FUTURE_PLAN.md). A worked example of one clip going through indexing and search, with every model named, is in [docs/scenario-walkthrough.md](docs/scenario-walkthrough.md). Everything that uses the web (Tavily) is in [docs/tavily.md](docs/tavily.md).
 
@@ -468,9 +468,37 @@ cd engine
 | Save to Inbox says "Open the page and download it there" | The site only gives the file to a browser. Download it from the page into the Inbox folder; the next licence check finds its page from the file name |
 | Indexing feels slow | The engine log has a line per video with the time of each step (shots, frames, local, describe, speech) |
 
-## Roadmap
+## Future implementations
 
-Hermes Agent in an OpenShell sandbox with memory and self-written skills; a pre-publish check (licences of the files used in one video); Pexels, Pixabay and Freesound APIs next to Tavily; Google Drive API connector; landing page and hosted demo on Nebius; code signing for the installer.
+These integrations are planned and are **not included in the current release**.
+
+### Local MCP server for your AI creative assistant
+
+Connect your preferred MCP-compatible AI assistant to a local Creator Asset Assistant server, giving it context about the media you already own while you brainstorm scripts and scenes.
+
+- Expose selected library information: available assets, descriptions, transcripts, tags and shot timestamps.
+- Let the assistant search and inspect footage while developing a script, grounding scene ideas in shots you can actually use.
+- Identify missing shots and turn those gaps into a targeted shoot list or stock-search plan.
+- Keep control over which library information the connected assistant can access. A local MCP server does not by itself make a connected cloud assistant local; sharing depends on the assistant and your configuration.
+
+### Video-editor extensions
+
+Find footage without leaving your editing workspace. Planned integrations include an Adobe Premiere Pro panel and a DaVinci Resolve integration.
+
+- Search the indexed library and preview matching moments inside the editor.
+- Bring selected clips and their in/out points into the project or timeline without opening a separate application.
+- Use playhead and timeline context to suggest relevant b-roll while editing.
+- Export planned rough cuts through formats such as OpenTimelineIO and FCPXML, subject to each editor's supported workflow.
+
+### Further roadmap
+
+- Hermes Agent with persistent memory and reusable skills, contained by OpenShell policies.
+- Pre-publish licence review and attribution for the assets used in an edit.
+- Direct Pexels, Pixabay and Freesound APIs alongside Tavily, plus a Google Drive API connector.
+- Advanced motion search, local person clustering, audio stem separation and beat-aware editing.
+- Optional cloud batch processing, studio collaboration and signed Windows installers.
+
+The landing page and Vercel static interactive preview are already implemented; they are separate from these planned integrations. See the [future architecture diagram above](#architecture-maps) and [detailed future roadmap](FUTURE_PLAN.md) for the broader design.
 
 ## Licences of bundled or downloaded models and fonts
 

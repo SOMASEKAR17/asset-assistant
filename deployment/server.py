@@ -87,7 +87,7 @@ class Guard:
                     headers = [(k,v) for k,v in headers if k.lower() != b'cache-control']
                     headers.append((b'cache-control', b'private, no-store'))
                 headers += [(b'x-content-type-options', b'nosniff'), (b'referrer-policy', b'no-referrer'),
-                            (b'content-security-policy', b"default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"),
+                            (b'content-security-policy', b"default-src 'self'; img-src 'self'; media-src 'self'; frame-src https://www.youtube-nocookie.com; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"),
                             (b'permissions-policy', b'camera=(), microphone=(), geolocation=()')]
                 message['headers'] = headers
             await send(message)

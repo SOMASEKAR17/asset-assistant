@@ -2,6 +2,10 @@
 
 What was built and changed, newest first. Dates are IST.
 
+## 30 Oct 2026 · Submission track
+
+- Set the submission track to **Best Apps and Agents** across the README and planning documents. Updated the track-fit explanation to reflect implemented features and distinguish planned agent integrations.
+
 ## 21 Oct 2026 · Web features with Tavily: free assets, licences, b-roll plans
 
 Details, requests, credits and limits: [docs/tavily.md](docs/tavily.md).
@@ -102,5 +106,5 @@ Details, requests, credits and limits: [docs/tavily.md](docs/tavily.md).
 
 ## 19 Oct 2026 · Plan
 
-- Checked the idea against the Personal AI track and the judging criteria; researched other ideas and rejected country-specific ones because a global panel would ask how they work elsewhere.
+- Checked the initial track fit and the judging criteria; researched other ideas and rejected country-specific ones because a global panel would ask how they work elsewhere.
 - Wrote `plan.md` (v2): NVIDIA model for every job, privacy modes, data storage, Google Drive, free asset sources with Tavily, desktop app plus landing page plus hosted demo, schedule. The first plan is kept as `plan-v1.md`.

@@ -9,8 +9,7 @@ required = [BASE / name for name in (
     'vercel.json', '.vercelignore', '.gitignore', 'export_static.py',
     'vercel/build.mjs', 'vercel/sandbox.html', 'vercel/static-sandbox.mjs',
     'vercel/search.mjs', 'vercel/catalog/index.json', 'site/index.html',
-    'site/styles.css', 'site/site.js', 'site/config.json',
-    'site/media/demo.mp4', 'site/media/demo-poster.jpg')]
+    'site/styles.css', 'site/site.js', 'site/config.json')]
 required.extend(p for p in (BASE / 'site/fonts').rglob('*') if p.is_file())
 catalog = json.loads((BASE / 'vercel/catalog/index.json').read_text(encoding='utf-8'))
 for asset in catalog['assets']:
