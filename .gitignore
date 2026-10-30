@@ -15,3 +15,47 @@ Thumbs.db
 node_modules/
 electron/out/
 electron/dist_old/
+
+# Model weights and downloaded inference caches
+models/
+model_cache/
+**/.cache/huggingface/
+**/.cache/torch/
+*.safetensors
+*.ckpt
+*.bin
+*.pth
+*.onnx
+*.gguf
+
+# Local AI-generated media and scratch outputs
+ai-outputs/
+generated-assets/
+generated-media/
+report-work/
+test-tmp/
+*.log
+
+# Local media; explicitly retain the app icon and deployment demo assets
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.m4v
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+*.tiff
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.aac
+!electron/assets/icon.png
+!deployment/preview/*.jpg
+!deployment/site/media/demo-poster.jpg
+!deployment/site/media/demo.mp4
