@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Interactive preview — Creator Asset Assistant</title><link rel="stylesheet" href="styles.css?v=static-1"><script type="module" src="static-sandbox.mjs"></script></head>
+<body>
+<header><a class="brand" href="index.html"><span class="square"></span>CREATOR ASSET<br>ASSISTANT</a><nav aria-label="Main navigation"><a href="index.html#demo">Watch the demo ↗</a><a href="index.html">← Back to website</a></nav><span class="edition">INTERACTIVE PREVIEW</span></header>
+<main class="sandbox-main">
+<div class="sandbox-top"><div><div class="eyebrow"><span class="square"></span> A SMALL PREVIEW OF THE DESKTOP APP</div><h1>EXPLORE THE LIBRARY.</h1></div><span id="engine-state" class="muted">Loading sample index…</span></div>
+<aside class="notice"><strong>An interactive preview, not a full sandbox.</strong> This gives you a glimpse of how Creator Asset Assistant works: search a fixed sample library by keywords and preview matching moments. <a href="index.html#demo">Watch the demo video for the broader picture.</a></aside>
+<p><strong>Get the desktop app for five additional capabilities:</strong> semantic search, indexing your own folders, automatic folder watching, b-roll planning and licence tools. <a href="index.html#download">Download for Windows ↗</a></p>
+<p class="muted">Search runs in your browser. This static sandbox does not accept uploads or make live AI or Tavily calls. Sample previews do not grant reuse rights.</p>
+<form class="search-form" id="search-form"><label class="sr-only" for="query">Search sample keywords</label><input id="query" maxlength="300" placeholder="Try sunset, city, whoosh…" autocomplete="off"><label class="sr-only" for="kind">Media type</label><select id="kind"><option value="">All assets</option><option value="video">Videos</option><option value="image">Images</option><option value="audio">Sounds &amp; music</option></select><button class="button primary" type="submit">Search ↵</button></form>
+<div class="suggestions"><button data-query="sunset">sunset</button><button data-query="city">city</button><button data-query="whoosh">whoosh</button><button id="browse">Browse all assets</button></div>
+<p id="status" class="status" role="status" aria-live="polite"></p><div id="results" class="results"></div><div class="load-row"><button id="more" class="button" hidden>Load more</button></div>
+</main>
+<dialog id="detail"><div class="dialog-head"><h2 id="asset-title"></h2><button id="close" class="close" aria-label="Close preview">✕</button></div><div id="preview" class="preview"></div><p id="caption"></p><p id="tags" class="tags"></p><div id="segments" class="segments"></div><p id="licence" class="muted"></p></dialog>
+<footer><span>Creator Asset Assistant / Interactive keyword preview</span><a href="index.html#demo">See the full product demo ↗</a></footer>
+</body></html>

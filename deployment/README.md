@@ -1,5 +1,20 @@
 # Creator Asset Assistant — web deployment
 
+## Recommended: Vercel static preview (no VM needed)
+
+Use the [Vercel deployment guide](vercel/README.md) for the current lightweight public preview. It serves the prepared sample media and a public JSON index, with browser-side keyword search and timestamped previews. It needs no API keys, Python runtime, paid inference or persistent backend. The desktop application retains semantic search and the full feature set. The original Docker deployment below remains an option for server-side uploads and live API features; it is not required for Vercel.
+
+From the repository root:
+
+```powershell
+.venv/Scripts/python.exe deployment/export_static.py
+node deployment/vercel/build.mjs
+```
+
+Commit the exported catalog and shared website files. In Vercel select root directory **deployment**, preset **Other**, build command **node vercel/build.mjs**, output **vercel/public**. Full publishing steps and limitations are in the guide above.
+
+## Original Docker backend
+
 This folder contains the landing page and a browser sandbox with a read-only shared library and private uploads. Desktop source files are not changed. `snapshot.ps1` copies the engine and display font here; Docker builds use only this directory. Nothing has been deployed to a cloud account.
 
 ## What is ready

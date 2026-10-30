@@ -3,6 +3,8 @@ library/
 seed/
 models/
 .env
+.env.*
+!.env.example
 secrets/
 uploads/
 .preview/
@@ -10,3 +12,15 @@ __pycache__/
 *.pyc
 site/downloads/*.exe
 site/downloads/*.sha256
+vercel/public/
+.vercel/
+# Only deliberately exported, public demo assets belong in Git.
+!vercel/catalog/index.json
+!vercel/catalog/media/*.mp4
+!vercel/catalog/media/*.webm
+!vercel/catalog/media/*.jpg
+!vercel/catalog/media/*.jpeg
+!vercel/catalog/media/*.png
+!vercel/catalog/media/*.webp
+!vercel/catalog/media/*.mp3
+!vercel/catalog/media/*.wav

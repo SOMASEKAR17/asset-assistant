@@ -1,0 +1,14 @@
+vendor/
+library/
+seed/
+models/
+uploads/
+secrets/
+.env*
+.preview/
+__pycache__/
+tests/
+vercel/public/
+*.py
+*.ps1
+*.db*

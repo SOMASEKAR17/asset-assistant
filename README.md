@@ -96,6 +96,181 @@ Web (Tavily, on request)
 
 The engine is a Python service (Starlette + uvicorn) on `127.0.0.1`; the UI is plain HTML, CSS and JavaScript served by the engine; the Electron app starts the engine, shows a splash screen while it loads and stops it on quit.
 
+## Architecture maps
+
+**Vercel preview:** a static export of the prepared sample media and public JSON index now runs keyword search in the browser, with matching segment timestamps. It is an interactive preview, not the full sandbox or desktop engine. No VM, embeddings runtime or API credentials are required. See [Vercel deployment instructions](deployment/vercel/README.md). The Docker API path below remains available separately.
+
+Expand either map below to explore the implemented system or the proposed integrations. These are Mermaid diagrams rendered by GitHub; the disclosure controls work without scripts. Pan/zoom availability depends on the Markdown viewer. GitHub README files do not run custom interactive JavaScript.
+
+The browser sandbox is a **partial demo**, not the full desktop application. [Watch the product demo](deployment/site/media/demo.mp4) for a broader walkthrough. The deployment folder contains working hosting code; a live public cloud deployment has not been verified.
+
+<details open>
+<summary><strong>Current implementation — desktop, browser sandbox, models and API calls</strong></summary>
+
+Solid arrows show data flow or calls; dotted arrows show credential access. Cloud calls depend on the selected feature and privacy settings.
+
+```mermaid
+flowchart TB
+    subgraph desktop["Desktop — Windows computer"]
+        ui["Electron UI: HTML / CSS / JavaScript"]
+        api["Starlette + Uvicorn API on localhost"]
+        folders["Local folders + Google Drive Desktop synced folders"]
+        indexer["Watcher + indexer: FFmpeg / ffprobe<br/>Shots, keyframes, thumbnails, metadata, audio analysis"]
+        models["Local AI: SigLIP 2 visual embeddings<br/>MiniLM meaning embeddings<br/>Parakeet speech + word timestamps"]
+        db[("SQLite + disk caches<br/>Assets, transcripts, vectors, FTS5, licences, feedback")]
+        search["Hybrid search + similar assets<br/>Meaning, keywords, visuals, dates, feedback"]
+        creative["Stock discovery, licences and b-roll planning"]
+        inbox["Stock downloads into Inbox"]
+        keys["OS keyring / environment credentials"]
+        ui --> api
+        folders --> indexer --> models --> db
+        indexer --> db
+        api --> search --> db
+        api --> creative --> inbox --> indexer
+    end
+    subgraph web["Web deployment — separate Docker Compose application"]
+        browser["Visitor / owner browser"]
+        landing["Landing page + product demo video"]
+        release["Windows installer release link<br/>Requires configured release URL"]
+        proxy["Caddy HTTPS proxy"]
+        adapter["Restricted Starlette API + copied engine<br/>No desktop administration endpoints"]
+        shared[("Curated read-only sample library + prepared index")]
+        uploads["Private named upload folders<br/>50 MB/file, 200 MB/session<br/>Validation, quotas, bounded queue"]
+        worker["Indexing subprocess<br/>Local models + optional cloud captions"]
+        sessions[("Per-session files, SQLite indexes + thumbnails")]
+        cleanup["24-hour expiry + cleanup worker"]
+        prepare["Operator preparation job<br/>Index cleared samples + cache models"]
+        secrets["Owner keys: server-only Docker secrets"]
+        browser --> landing
+        landing --> release
+        landing --> proxy --> adapter
+        adapter -->|Search and preview| shared
+        adapter --> uploads --> worker --> sessions
+        adapter -->|Session-scoped search and preview| sessions
+        cleanup -->|Delete expired data| sessions
+        prepare --> shared
+        prepare -->|Model cache| worker
+    end
+    subgraph external["External services — called by Python"]
+        hf["Hugging Face: model downloads"]
+        nebius["Nebius Token Factory<br/>Super VL: visual descriptions<br/>Nano Omni: audio descriptions<br/>Nano: fallback audio, licences, optional query expansion<br/>Ultra / Super / Nano: b-roll planning"]
+        tavily["Tavily search + extraction"]
+        stock["Stock pages, previews and media URLs<br/>Pexels, Pixabay, Mixkit, Unsplash, Freesound"]
+    end
+    subgraph static["Vercel static interactive preview — no runtime API calls"]
+        exportStatic["Local exporter: prepared index + approved samples"]
+        github["GitHub: public JSON catalog + media + website"]
+        vercel["Vercel static build + CDN"]
+        keyword["Visitor browser: keyword matching<br/>Media filters + matching-shot timestamps"]
+        exportStatic --> github --> vercel --> keyword
+    end
+    shared --> exportStatic
+    hf --> models
+    hf --> prepare
+    indexer -->|Standard mode: keyframes and audio excerpts| nebius
+    search -->|Optional query expansion| nebius
+    creative --> nebius
+    creative --> tavily
+    creative --> stock
+    worker -->|Upload descriptions| nebius
+    prepare -->|Optional sample descriptions| nebius
+    adapter -->|Explicit rate-limited web search| tavily
+    keys -.-> nebius
+    keys -.-> tavily
+    secrets -.-> nebius
+    secrets -.-> tavily
+```
+
+**Current boundaries:** Hermes, OpenShell, NemoClaw and MCP are not implemented. Python calls services directly. The browser runs a restricted server version of the engine, not a streamed Windows executable. API keys stay on the server; private uploads are isolated by session. Google Drive integration currently means locally synced folders, not a direct API connector.
+
+</details>
+
+<details>
+<summary><strong>Future architecture — agents, MCP, editors, advanced models and cloud integrations</strong></summary>
+
+Solid arrows retain existing connections. Dashed arrows represent proposed work, including optional and exploratory integrations. This map combines the roadmap; it does not claim every integration is available or validated.
+
+```mermaid
+flowchart TB
+    subgraph clients["Interfaces and clients"]
+        app["Existing desktop app + browser sandbox"]
+        ai["MCP clients: Claude, ChatGPT, Cursor<br/>Antigravity and local LLMs"]
+        mobile["Telegram / WhatsApp companion<br/>Text + voice requests"]
+        tunnel["Authenticated remote access<br/>Tailscale / Cloudflare Tunnel / ngrok alternatives"]
+        editors["Premiere Pro panel + Resolve Python API<br/>Final Cut through timeline exchange"]
+    end
+    subgraph agent["Planned OpenShell boundary — NemoClaw blueprint"]
+        hermes["Hermes Agent<br/>Conversations, tools, schedules, proactive suggestions"]
+        memory[("Persistent memory + learned SKILL.md files")]
+        policy["Filesystem and network policies<br/>Credential brokering + inference gateway"]
+        mcp["CAA MCP server<br/>Library resources + search, inspect, plan, export tools"]
+        hermes -.-> memory
+        hermes -.-> mcp
+        hermes -.-> policy
+    end
+    subgraph core["Engine and creative workflows"]
+        engine["Existing CAA engine<br/>Indexing, hybrid search, preview, transcripts<br/>Stock discovery, licences, b-roll planning"]
+        local[("Existing SQLite + media caches")]
+        plan["Asset-informed scripts and gap analysis<br/>Library inventory + aesthetic profile"]
+        shoot["Shoot plans + location / gear call sheets<br/>New footage resolves gaps"]
+        listener["Timeline listener: playhead and clip context"]
+        audit["Pre-publish licence review + credit blocks<br/>Scheduled source-term checks"]
+        export["Rough-cut assembly<br/>OTIO / FCPXML / EDL / CSV"]
+        rights["Exploratory copyright / Content ID checking<br/>Requires authorized reference-service access"]
+        engine --> local
+        mcp -.-> engine
+        mcp -.-> plan
+        engine -.-> plan -.-> shoot -.-> engine
+        plan -.-> audit -.-> export
+        rights -.-> audit
+    end
+    subgraph ingest["Planned ingest and studio integration"]
+        connectors["Google Drive API + Picker<br/>Dropbox + Frame.io"]
+        sd["SD-card ingest: checksum copy + proxies"]
+        stockapi["Direct Pexels / Pixabay / Freesound APIs"]
+        studio[("NAS / SAN shared media<br/>PostgreSQL or replicated SQLite<br/>Multi-user access + feedback")]
+        connectors -.-> engine
+        sd -.-> engine
+        stockapi -.-> engine
+        engine -.-> studio
+    end
+    subgraph inference["Models and external services"]
+        token["Existing Nebius Token Factory roles<br/>Planned Super agent + Ultra complex planning / audits"]
+        tavily["Existing Tavily + stock source websites"]
+        rtx["Optional local RTX Nemotron<br/>NIM / Ollama backends"]
+        advanced["Cosmos-Embed1 motion search<br/>NeMo / Nemotron text and visual embeddings<br/>Optional CLAP audio similarity"]
+        analysis["Local InsightFace / SCRFD person clusters<br/>Demucs stems + beat-aligned editing"]
+        policy -.-> token
+        policy -.-> rtx
+        engine --> token
+        engine --> tavily
+        advanced -.-> engine
+        analysis -.-> engine
+        audit -.-> tavily
+    end
+    subgraph cloud["Planned cloud and distribution expansion"]
+        endpoint["Nebius Serverless Endpoint<br/>Alternative to Compose demo hosting"]
+        jobs["Nebius Serverless GPU Jobs<br/>Pre-indexing, opt-in acceleration<br/>Evaluations and library audits"]
+        objects[("Nebius Object Storage<br/>Sample media + prepared indexes")]
+        releases["Signed Windows installer releases"]
+        engine -.-> jobs
+        jobs -.-> advanced
+        jobs -.-> objects -.-> endpoint
+    end
+    app --> engine
+    ai -.-> mcp
+    mobile -.-> tunnel -.-> hermes
+    editors -.-> listener -.-> hermes
+    editors -.-> mcp
+    export -.-> editors
+    app -.-> endpoint
+    releases -.-> app
+```
+
+Local model backends and cloud hosting options are alternatives, not mandatory dependencies. Copyright checks cannot guarantee commercial licence safety. See [the architecture plan](plan.md), [future roadmap](FUTURE_PLAN.md), and [deployment guide](deployment/README.md) for scope and prerequisites.
+
+</details>
+
 ## Quick start (Windows)
 
 Requirements: Python 3.10+, FFmpeg (the setup script installs it with winget), Node.js LTS for the desktop app, about 3 GB of disk for model runtimes.
